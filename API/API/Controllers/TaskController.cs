@@ -1,4 +1,5 @@
 ﻿using API.DTO.TodoTask;
+using API.Exceptions;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +18,7 @@ public class TaskController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<TodoTaskDto>>> GetAsync([FromHeader] string userId)
+    public async Task<ActionResult<List<TodoTaskDto>>> Get([FromHeader] string userId)
     {
         var tasks = (await _todoService.GetUserTasksAsync(userId)).Select(t => new TodoTaskDto
         {
@@ -31,18 +32,38 @@ public class TaskController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<string>> CreateAsync([FromHeader] string userId, [FromBody] CreateTodoTaskDto dto)
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<TodoTaskDto>> Create([FromHeader] string userId, [FromBody] CreateTodoTaskDto dto)
     {
-        return CreatedAtAction(nameof(GetTodoTaskAsync), new { id = "id" }, null);
+        try
+        {
+            var createTask = await _todoService.CreateTaskAsync(dto, userId);
+            return CreatedAtAction(nameof(GetTodoTask), new { id = createTask.Id }, new TodoTaskDto
+            {
+                Id = createTask.Id,
+                Created = createTask.Created,
+                Description = createTask.Description,
+                IsCompleted = createTask.IsCompleted,
+                Title = createTask.Title
+            });
+        }
+        // Should not happen, but just in case
+        catch (TodoTaskAlreadyExistsException ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TodoTaskDto>> GetTodoTaskAsync([FromHeader] string userId, string id)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TodoTaskDto>> GetTodoTask([FromHeader] string userId, string id)
     {
         var task = await _todoService.GetTaskAsync(userId, id);
         if (task == null)
         {
-            return NotFound();
+            return NotFound($"Todo task with id {id} not found");
         }
         return Ok(new TodoTaskDto
         {
@@ -55,16 +76,34 @@ public class TaskController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteTodoTaskAsync([FromHeader] string userId, string id)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteTodoTask([FromHeader] string userId, string id)
     {
-        return Ok();
+        try
+        {
+            await _todoService.DeleteTaskAsync(id, userId);
+            return NoContent();
+        }
+        catch (TodoTaskNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpPatch("{id}/completed")]
-    public async Task<ActionResult> MarkTodoTaskCompletedAsync([FromHeader] string userId, string id)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> MarkTodoTaskCompleted([FromHeader] string userId, string id)
     {
-        return Ok();
+        try
+        {
+            await _todoService.UpdateTaskAsCompletedAsync(id, userId);
+            return NoContent();
+        }
+        catch (TodoTaskNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
-
-
 }

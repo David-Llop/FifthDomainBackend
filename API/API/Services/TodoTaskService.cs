@@ -1,7 +1,8 @@
 ﻿using API.DataBase;
 using API.DataBase.Entities;
 using API.DTO.TodoTask;
-using Microsoft.AspNetCore.Http.HttpResults;
+using API.Exceptions;
+using EntityFramework.Exceptions.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services;
@@ -29,6 +30,38 @@ public class TodoTaskService
 
     public async Task<TodoTask> CreateTaskAsync(CreateTodoTaskDto taskDto, string userId)
     {
-        return Ok(new TodoTaskDto())
+        TodoTask newTask = new TodoTask(taskDto.Title, taskDto.Description, userId);
+        _todoTasks.Add(newTask);
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (UniqueConstraintException ex)
+        {
+            throw new TodoTaskAlreadyExistsException($"Todo task with id {newTask.Id} already exists", ex);
+        }
+        return newTask;
+    }
+    public async Task DeleteTaskAsync(string taskId, string userId)
+    {
+        TodoTask? taskToDelete = await _todoTasks.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+        if (taskToDelete == null)
+        {
+            throw new TodoTaskNotFoundException($"Todo task with id {taskId} not found");
+        }
+        _todoTasks.Remove(taskToDelete);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task UpdateTaskAsCompletedAsync(string taskId, string userId)
+    {
+        TodoTask? taskToUpdate = await _todoTasks.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+        if (taskToUpdate == null)
+        {
+            throw new TodoTaskNotFoundException($"Todo task with id {taskId} not found");
+        }
+        taskToUpdate.IsCompleted = true;
+        _todoTasks.Update(taskToUpdate);
+        await _dbContext.SaveChangesAsync();
     }
 }
