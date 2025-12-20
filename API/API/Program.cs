@@ -11,6 +11,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<ApplicationDbContext>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TodoTaskService>();
 
 var app = builder.Build();
 

@@ -8,10 +8,12 @@ namespace API.DataBase;
 public class ApplicationDbContext: DbContext
 {
     public DbSet<User> Users { get; set; }
+    public DbSet<TodoTask> TodoTasks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>();
+        modelBuilder.Entity<User>().HasKey(u => u.Id);
+        modelBuilder.Entity<TodoTask>().HasKey(t => t.Id);
     }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -20,27 +22,24 @@ public class ApplicationDbContext: DbContext
             var user1 = context.Set<User>().FirstOrDefault(u => u.Name == "user1");
             if (user1 == null)
             {
-                context.Set<User>().Add(new User("user1", PasswordSha256("user1password")));
+                user1 = new User("user1", PasswordSha256("user1password"));
+                context.Set<User>().Add(user1);
+            }
+            if (!context.Set<TodoTask>().Any(t => t.UserId == user1.Id))
+            {
+                context.Set<TodoTask>().Add(new TodoTask ("Task 1", "Do something", user1.Id));
             }
             var user2 = context.Set<User>().FirstOrDefault(u => u.Name == "user2");
             if (user2 == null)
             {
-                context.Set<User>().Add(new User("user2", PasswordSha256("user2password")));
+                user2 = new User("user2", PasswordSha256("user2password"));
+                context.Set<User>().Add(user2);
+            }
+            if (!context.Set<TodoTask>().Any(t => t.UserId == user2.Id))
+            {
+                context.Set<TodoTask>().Add(new TodoTask("Task 1", "Do something", user2.Id));
             }
             context.SaveChanges();
-        }).UseAsyncSeeding(async (context, _, cancecllationToken) =>
-        {
-            var user1 = await context.Set<User>().FirstOrDefaultAsync(u => u.Name == "user1");
-            if (user1 == null)
-            {
-                context.Set<User>().Add(new User("user1", PasswordSha256("user1password")));
-            }
-            var user2 = await context.Set<User>().FirstOrDefaultAsync(u => u.Name == "user2");
-            if (user2 == null)
-            {
-                context.Set<User>().Add(new User("user2", PasswordSha256("user2password")));
-            }
-            await context.SaveChangesAsync(cancecllationToken);
         });
     }
 

@@ -1,5 +1,5 @@
 ﻿using API.DataBase.Entities;
-using API.DTO;
+using API.DTO.User;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,12 +15,8 @@ public class UserController : ControllerBase
     {
         _userService = userService;
     }
-    /// <summary>
-    /// Returns userId to send as header for the following queries
-    /// </summary>
-    /// <param name="userName"></param>
-    /// <param name="password"></param>
-    /// <returns></returns>
+
+    
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

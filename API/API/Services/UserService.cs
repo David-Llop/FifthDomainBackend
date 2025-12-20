@@ -22,6 +22,6 @@ public class UserService
 
     public async Task<User?> GetUserAsync(string username)
     {
-        return await _users.Where(u => u.Name == username).FirstOrDefaultAsync();
+        return await _users.AsNoTracking().FirstOrDefaultAsync(u => u.Name == username);
     }
 }
