@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Text;
+﻿using API.DataBase.Entities;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
-using API.DataBase.Entities;
+using System.Text;
 
 namespace API.DataBase;
 
-public class ApplicationDbContext: DbContext
+public class ApplicationDbContext : DbContext
 {
     public DbSet<User> Users { get; set; }
     public DbSet<TodoTask> TodoTasks { get; set; }
@@ -27,7 +27,7 @@ public class ApplicationDbContext: DbContext
             }
             if (!context.Set<TodoTask>().Any(t => t.UserId == user1.Id))
             {
-                context.Set<TodoTask>().Add(new TodoTask ("Task 1", "Do something", user1.Id));
+                context.Set<TodoTask>().Add(new TodoTask("Task 1", "Do something", user1.Id));
             }
             var user2 = context.Set<User>().FirstOrDefault(u => u.Name == "user2");
             if (user2 == null)
@@ -45,14 +45,15 @@ public class ApplicationDbContext: DbContext
 
     private string PasswordSha256(string pasword)
     {
-        byte[] bytes = Encoding.Unicode.GetBytes(pasword);
+        byte[] bytes = Encoding.UTF8.GetBytes(pasword);
         SHA256 hashstring = SHA256.Create();
         byte[] hash = hashstring.ComputeHash(bytes);
-        string hashString = string.Empty;
-        foreach (byte x in hash)
+        StringBuilder hexString = new StringBuilder(hash.Length * 2);
+        foreach (byte b in hash)
         {
-            hashString += String.Format("{0:x2}", x);
+            hexString.AppendFormat("{0:x2}", b);
         }
-        return hashString;
+
+        return hexString.ToString();
     }
 }

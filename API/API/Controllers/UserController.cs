@@ -16,7 +16,13 @@ public class UserController : ControllerBase
         _userService = userService;
     }
 
-    
+    [HttpOptions("login")]
+    public IActionResult Options()
+    {
+        Response.Headers.Append("Allow", "POST, OPTIONS");
+        return Ok();
+    }
+
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -31,6 +37,6 @@ public class UserController : ControllerBase
         {
             return Unauthorized();
         }
-        return Ok(new UserResponseDto { Id = user.Id, UserName = user.Name});
+        return Ok(new UserResponseDto { Id = user.Id, UserName = user.Name });
     }
 }
