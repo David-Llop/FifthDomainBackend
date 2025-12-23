@@ -2,7 +2,6 @@
 using API.DataBase.Entities;
 using API.DTO.TodoTask;
 using API.Exceptions;
-using EntityFramework.Exceptions.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Services;
@@ -20,7 +19,7 @@ public class TodoTaskService
 
     public async Task<List<TodoTask>> GetUserTasksAsync(string userId)
     {
-        return await _todoTasks.AsNoTracking().Where(t => t.UserId == userId).ToListAsync();
+        return await _todoTasks.AsNoTracking().Where(t => t.UserId == userId).OrderBy(t => t.IsCompleted).ThenBy(t => t.Created).ToListAsync();
     }
 
     public async Task<TodoTask?> GetTaskAsync(string userId, string taskId)
@@ -36,7 +35,7 @@ public class TodoTaskService
         {
             await _dbContext.SaveChangesAsync();
         }
-        catch (UniqueConstraintException ex)
+        catch (DbUpdateException ex)
         {
             throw new TodoTaskAlreadyExistsException($"Todo task with id {newTask.Id} already exists", ex);
         }

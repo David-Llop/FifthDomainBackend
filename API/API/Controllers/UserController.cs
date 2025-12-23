@@ -1,5 +1,6 @@
 ﻿using API.DataBase.Entities;
 using API.DTO.User;
+using API.Exceptions;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +15,23 @@ public class UserController : ControllerBase
     public UserController(UserService userService)
     {
         _userService = userService;
+    }
+
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<UserResponseDto>> CreateUser([FromBody] UserLoginDto loginDto)
+    {
+        try
+        {
+            User user = await _userService.CreateUserAsync(loginDto.UserName, loginDto.Password);
+
+            return CreatedAtAction(nameof(UserLogin), new UserResponseDto { Id = user.Id, UserName = user.Name });
+        }
+        catch (UserAlreadyExistsException ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
 
     [HttpOptions("login")]
